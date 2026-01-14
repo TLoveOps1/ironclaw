@@ -2,6 +2,13 @@
 
 The Ledger service manages the append-only record of mission events and provides derived state for mission runs and orders.
 
+## Core Guarantees
+
+- **Append-Only**: The `events` table is the sole source of truth. No records are ever deleted or modified.
+- **Idempotency**: `POST /events` requires or generates an `event_id`. Duplicate event IDs are ignored (idempotent submission).
+- **Auditability**: Every change to the system state is traceable back to a specific event.
+- **Disposable Snapshots**: Snapshot tables (`runs_snapshot`, `orders_snapshot`) are derived and can be safely deleted; they are recreated during the rebuild process.
+
 ## Running Locally
 
 1. Activate venv:

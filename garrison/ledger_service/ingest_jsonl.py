@@ -4,8 +4,10 @@ from pathlib import Path
 from datetime import datetime, timezone
 import uuid
 
+import os
+
 # Configuration
-THEATER_ROOT = Path("/home/tlove96/ironclaw/theaters/demo")
+THEATER_ROOT = Path(os.environ.get("IRONCLAW_THEATER_ROOT", "/home/tlove96/ironclaw/theaters/demo"))
 RUNS_JSONL = THEATER_ROOT / "runs.jsonl"
 ORDERS_JSONL = THEATER_ROOT / "orders.jsonl"
 DB_PATH = Path(__file__).parent / "ledger.db"
