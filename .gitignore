@@ -1,0 +1,17 @@
+
+# IronClaw runtime state (should never be committed)
+theaters/**/worktrees/
+theaters/**/archive/
+theaters/**/runs.jsonl
+theaters/**/orders.jsonl
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+theaters/**/.venv/
+theaters/**/venv/
+
