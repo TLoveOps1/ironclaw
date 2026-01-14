@@ -1,0 +1,13 @@
+{
+  "version": "v0",
+  "execution": {
+    "max_units_per_request": 1,
+    "max_retries_per_order": 0,
+    "max_wall_clock_seconds": 120
+  },
+  "observer": {
+    "require_artifact": true,
+    "require_aar": true
+  },
+  "notes": "Declarative defaults only. Enforcement is handled in code."
+}

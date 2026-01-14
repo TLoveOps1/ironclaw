@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IronClaw Order (v0)",
+  "type": "object",
+  "required": [
+    "order_id",
+    "objective",
+    "model",
+    "temperature",
+    "prompt"
+  ],
+  "properties": {
+    "order_id": {
+      "type": "string",
+      "description": "Stable identifier for this Order"
+    },
+    "objective": {
+      "type": "string",
+      "description": "Human-readable objective of the Order"
+    },
+    "model": {
+      "type": "string",
+      "description": "io.intelligence model identifier"
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Prompt or task input for the unit"
+    }
+  },
+  "additionalProperties": false
+}

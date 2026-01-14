@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IronClaw After-Action Report (v0)",
+  "type": "object",
+  "required": [
+    "order_id",
+    "status",
+    "started_at",
+    "ended_at",
+    "summary",
+    "artifacts",
+    "model"
+  ],
+  "properties": {
+    "order_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "failed"]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "type"],
+        "properties": {
+          "path": { "type": "string" },
+          "type": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["provider", "name", "temperature"],
+      "properties": {
+        "provider": { "type": "string" },
+        "name": { "type": "string" },
+        "temperature": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
