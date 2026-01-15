@@ -5,6 +5,7 @@ import os
 import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
+from fastapi import HTTPException
 
 class COLogic:
     def __init__(self, ledger_url: str, vault_url: str, worker_url: str):
@@ -88,3 +89,39 @@ class COLogic:
         except:
             pass
         return None
+
+    def resolve_model_config(self, theater: str, model_profile: str, overrides: Dict[str, Any]) -> Dict[str, Any]:
+        policy_path = Path(f"/home/tlove96/ironclaw/theaters/{theater}/repo/policy/model_policy.json")
+        if not policy_path.exists():
+            # Fallback to default theater if specific theater policy doesn't exist
+            policy_path = Path("/home/tlove96/ironclaw/theaters/default/repo/policy/model_policy.json")
+        
+        if not policy_path.exists():
+            raise HTTPException(status_code=500, detail=f"Model policy not found for theater {theater}")
+
+        with policy_path.open("r", encoding="utf-8") as f:
+            policy = json.load(f)
+
+        profiles = policy.get("profiles", {})
+        if model_profile not in profiles:
+            raise HTTPException(status_code=400, detail=f"Unknown model profile: {model_profile}")
+
+        config = profiles[model_profile].copy()
+        
+        # Apply overrides (only if in allowlist or if it's a known param)
+        allowlist = policy.get("allowlist_models", [])
+        if "model" in overrides:
+            if overrides["model"] not in allowlist:
+                raise HTTPException(status_code=400, detail=f"Model {overrides['model']} not in allowlist")
+            config["model"] = overrides["model"]
+        
+        if "temperature" in overrides:
+            config["temperature"] = overrides["temperature"]
+
+        if "max_tokens" in overrides:
+            config["max_tokens"] = overrides["max_tokens"]
+
+        # Add profile name for provenance
+        config["profile_name"] = model_profile
+        
+        return config

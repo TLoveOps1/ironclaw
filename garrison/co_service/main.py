@@ -61,6 +61,13 @@ async def chat(req: ChatRequest):
         worktree_path = logic.provision_worktree(theater, order_id)
         logic.emit_event(run_id, order_id, request_id, "ORDER_WORKTREE_READY", {"worktree_path": worktree_path})
         
+        # 2.5 Resolve Model Policy
+        resolved_model_config = logic.resolve_model_config(
+            theater, 
+            req.model_profile or req.model or "executor_default", 
+            req.model_overrides or {"temperature": req.temperature} if req.temperature is not None else {}
+        )
+
         # 3. Execute Worker
         worker_req = {
             "run_id": run_id,
@@ -69,8 +76,8 @@ async def chat(req: ChatRequest):
             "worktree_path": worktree_path,
             "objective": objective,
             "prompt": req.message,
-            "model": req.model,
-            "temperature": req.temperature,
+            "prompt_template": req.prompt_template,
+            "resolved_model_config": resolved_model_config, # Resolved
             "stall_seconds": req.stall_seconds or STALL_SECONDS,
             "hard_timeout_seconds": req.hard_timeout_seconds or HARD_TIMEOUT,
             "request_id": request_id

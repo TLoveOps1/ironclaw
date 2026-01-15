@@ -256,6 +256,9 @@ def main():
     chat_p.add_argument("--theater", help="Theater hint")
     chat_p.add_argument("--request-id", help="Explicit request ID")
     chat_p.add_argument("--retry", action="store_true", help="Retry the last request")
+    chat_p.add_argument("--profile", help="Model profile name")
+    chat_p.add_argument("--overrides", help="JSON string of model overrides")
+    chat_p.add_argument("--template", help="Prompt template path")
     chat_p.add_argument("--new", action="store_true", help="Force new request ID")
     chat_p.add_argument("--json", action="store_true", help="Print raw JSON output")
     chat_p.add_argument("--timeout", type=int, default=900, help="HTTP timeout in seconds")
@@ -294,6 +297,11 @@ def main():
             if args.new: request_id = str(uuid.uuid4())
             payload = {"message": args.message, "request_id": request_id}
             if args.theater: payload["theater"] = args.theater
+            if args.profile: payload["model_profile"] = args.profile
+            if args.template: payload["prompt_template"] = args.template
+            if args.overrides:
+                try: payload["model_overrides"] = json.loads(args.overrides)
+                except: print(f"Warning: Failed to parse overrides as JSON: {args.overrides}")
 
         save_last_request(payload, co_url)
         try:

@@ -10,8 +10,8 @@ class ExecutionRequest(BaseModel):
     # Order payload
     objective: str
     prompt: str
-    model: str
-    temperature: float = 0.2
+    prompt_template: Optional[str] = None
+    resolved_model_config: Dict[str, Any]
     
     # Timeouts
     stall_seconds: int = 300
@@ -34,8 +34,16 @@ class AARModel(BaseModel):
     attempt: int
     status: str
     stage: str
-    model: Dict[str, Any]
     started_at: str
     ended_at: str
+    model_profile: str
+    model_id: str
+    prompt_template_path: Optional[str] = None
+    prompt_template_commit_sha: Optional[str] = None
+    prompt_hash: str
+    response_hash: str
+    cache_hit: bool
+    latency_ms: float
+    usage: Dict[str, Any]
     artifacts: List[Dict[str, Any]] = []
     error: Optional[str] = None
