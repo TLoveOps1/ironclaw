@@ -15,3 +15,7 @@ venv/
 theaters/**/.venv/
 theaters/**/venv/
 
+
+# Secrets
+.env
+theaters/**/.env
