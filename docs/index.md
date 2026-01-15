@@ -4,6 +4,12 @@
 
 IronClaw is intended for engineers exploring reliable, self-hosted AI execution systems rather than hosted agent platforms.
 
+<!-- Mermaid support for GitHub Pages -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true });
+</script>
+
 It is built around a simple premise:
 
 > **Execution units are disposable.**  
@@ -18,24 +24,25 @@ IronClaw enforces this by combining an append-only event ledger, Git-backed work
 IronClaw follows a **Watchdog Chain** architecture, ensuring every action is recorded, every environment is isolated, and every failure is inspectable.
 
 ### System Flow
-```mermaid
+
+<div class="mermaid">
 flowchart TB
     subgraph Client ["Human Interface"]
-        CLI["IronClaw CLI<br/>(Chat / Stack Control)"]
+        CLI["IronClaw CLI (Chat / Stack Control)"]
     end
 
     subgraph Garrison ["Garrison (Control Plane)"]
         direction TB
-        CO["<b>CO</b><br/>Orchestrator"]
-        L[("<b>Ledger</b><br/>Source of Truth")]
-        V["<b>Vault</b><br/>Worktree Manager"]
-        W["<b>Worker</b><br/>Execution Unit"]
-        O["<b>Observer</b><br/>Passive Oversight"]
+        CO["CO (Orchestrator)"]
+        L["Ledger (Source of Truth)"]
+        V["Vault (Worktree Manager)"]
+        W["Worker (Execution Unit)"]
+        O["Observer (Passive Oversight)"]
     end
 
     subgraph Theater ["Theater (Execution Substrate)"]
-        WT[["Git Worktree<br/>(Isolated Context)"]]
-        AAR["After Action Report<br/>(aar.json)"]
+        WT["Git Worktree (Isolated Context)"]
+        AAR["After Action Report (aar.json)"]
     end
 
     CLI -- "chat/mission" --> CO
@@ -50,16 +57,11 @@ flowchart TB
 
     L -. "monitor" .-> O
     O -. "anomalies" .-> CO
-
-    %% Styling
-    style Garrison fill:#f9f9fb,stroke:#d1d5db,stroke-width:2px
-    style Theater fill:#f0f9ff,stroke:#bae6fd,stroke-width:2px
-    style L fill:#eef2ff,stroke:#4f46e5,stroke-width:2px
-    style WT fill:#fff,stroke:#0ea5e9,stroke-width:2px
-```
+</div>
 
 ### The Mission Loop (Temporal View)
-```mermaid
+
+<div class="mermaid">
 sequenceDiagram
     autonumber
     participant U as CLI
@@ -67,7 +69,7 @@ sequenceDiagram
     participant L as Ledger
     participant V as Vault
     participant W as Worker
-    
+
     U->>CO: Submit Mission (request_id)
     CO->>L: Check mission state / Record start
     CO->>V: Request isolated worktree
@@ -77,16 +79,17 @@ sequenceDiagram
     W->>W: Execute & Generate Artifacts
     W->>L: Emit Completion / AAR Path
     CO-->>U: Return result
-```
+</div>
 
 ### Component Reference
-| Service | Domain | Responsibility | Source of Truth |
-| :--- | :--- | :--- | :--- |
-| **Ledger** | Persistence | Append-only event store for mission lifecycle. | SQLite / JSONL |
-| **Vault** | Storage | Managing Git worktrees, isolation, and archival. | Filesystem / Git |
-| **Worker** | Execution | Stateless mission runner with artifact generation. | AAR (aar.json) |
-| **CO** | Orchestration| High-level planning and service dispatch. | Ledger Events |
-| **Observer**| Oversight | Monitoring for stalls, orphans, and policy violations. | Signaling Buffer (in-memory / ephemeral)|
+
+| Service   | Domain      | Responsibility                                       | Source of Truth                     |
+| :---      | :---        | :---                                                 | :---                                |
+| **Ledger**   | Persistence | Append-only event store for mission lifecycle.       | SQLite / JSONL                      |
+| **Vault**    | Storage     | Managing Git worktrees, isolation, and archival.    | Filesystem / Git                    |
+| **Worker**   | Execution   | Stateless mission runner with artifact generation.  | AAR (aar.json)                      |
+| **CO**       | Orchestration | High-level planning and service dispatch.        | Ledger Events                       |
+| **Observer** | Oversight   | Monitoring for stalls, orphans, and policy violations. | Signaling Buffer (in-memory / ephemeral) |
 
 ---
 
