@@ -43,13 +43,28 @@ def create_worktree(theater: str, order_id: str, base_ref: str = "master") -> st
     worktree_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        subprocess.run(
-            ["git", "worktree", "add", "-b", order_id, str(worktree_path), base_ref],
-            cwd=str(repo_path),
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        # Check if branch already exists
+        branch_exists = subprocess.run(
+            ["git", "show-ref", "--verify", "--quiet", f"refs/heads/{order_id}"],
+            cwd=str(repo_path)
+        ).returncode == 0
+        
+        if branch_exists:
+            # Add worktree using existing branch
+            subprocess.run(
+                ["git", "worktree", "add", str(worktree_path), order_id],
+                cwd=str(repo_path)
+                # check=True, capture_output=True, text=True (inherited from subprocess.run)
+            )
+        else:
+            # Create new branch and add worktree
+            subprocess.run(
+                ["git", "worktree", "add", "-b", order_id, str(worktree_path), base_ref],
+                cwd=str(repo_path),
+                check=True,
+                capture_output=True,
+                text=True
+            )
         return str(worktree_path), True
     except subprocess.CalledProcessError as e:
         raise VaultError(f"Git worktree creation failed: {e.stderr}")
