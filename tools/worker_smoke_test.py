@@ -52,8 +52,29 @@ def test_worker_e2e():
         print(f"ERROR: Worker failed: {data.get('error')}")
         return False
     print(f"Worker completed. Order HEAD: {data['order_head']}")
+    first_head = data["order_head"]
 
-    # 4. Verify Filesystem
+    # 4. Worker: Idempotency (Short-circuit)
+    print("Worker: Testing idempotency short-circuit...")
+    resp = requests.post(f"{WORKER_URL}/execute", json={
+        "run_id": RUN_ID,
+        "order_id": ORDER_ID,
+        "worktree_path": wt_path,
+        "objective": "Test worker execution",
+        "prompt": "Say 'hello world' and nothing else.",
+        "model": "meta-llama/Llama-3.3-70B-Instruct"
+    })
+    resp.raise_for_status()
+    data = resp.json()
+    if data["status"] != "completed":
+        print(f"ERROR: Idempotency retry failed: {data.get('error')}")
+        return False
+    if data["order_head"] != first_head:
+        print(f"ERROR: Idempotency failed (divergent HEAD): {data['order_head']} != {first_head}")
+        return False
+    print("Idempotency short-circuit OK.")
+
+    # 5. Verify Filesystem
     print("Verifying filesystem...")
     wt = Path(wt_path)
     if not (wt / "outputs" / "model_output.txt").exists():
