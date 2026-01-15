@@ -106,8 +106,11 @@ def test_worker_e2e():
     events = resp.json()
     types = [e["event_type"] for e in events]
     print(f"Found events: {types}")
-    if "ORDER_RUNNING" not in types or "ORDER_COMPLETED" not in types:
-        print("ERROR: Missing expected events in ledger")
+    if types.count("ORDER_RUNNING") != 1:
+        print(f"ERROR: Expected exactly 1 ORDER_RUNNING event, found {types.count('ORDER_RUNNING')}")
+        return False
+    if types.count("ORDER_COMPLETED") != 1:
+        print(f"ERROR: Expected exactly 1 ORDER_COMPLETED event, found {types.count('ORDER_COMPLETED')}")
         return False
     
     resp = requests.get(f"{LEDGER_URL}/orders/{ORDER_ID}")
