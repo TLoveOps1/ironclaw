@@ -1,6 +1,6 @@
 # IronClaw
 
-IronClaw is a Python-based mission execution and orchestration framework for **durable, auditable AI runs**.
+*IronClaw is a Python-based mission execution and orchestration framework for durable, auditable AI runs in local or self-hosted environments.*
 
 It is built around a simple premise:
 
