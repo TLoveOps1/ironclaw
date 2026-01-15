@@ -53,6 +53,8 @@ def test_worker_e2e():
         return False
     print(f"Worker completed. Order HEAD: {data['order_head']}")
     first_head = data["order_head"]
+    wt = Path(wt_path)
+    first_output = (wt / "outputs" / "model_output.txt").read_text()
 
     # 4. Worker: Idempotency (Short-circuit)
     print("Worker: Testing idempotency short-circuit...")
@@ -72,7 +74,14 @@ def test_worker_e2e():
     if data["order_head"] != first_head:
         print(f"ERROR: Idempotency failed (divergent HEAD): {data['order_head']} != {first_head}")
         return False
-    print("Idempotency short-circuit OK.")
+    
+    # Assert artifacts haven't changed
+    current_output = (wt / "outputs" / "model_output.txt").read_text()
+    if current_output != first_output:
+        print("ERROR: Idempotency failed (divergent artifacts)")
+        return False
+        
+    print("Idempotency short-circuit OK (HEAD and artifacts unchanged).")
 
     # 5. Verify Filesystem
     print("Verifying filesystem...")
