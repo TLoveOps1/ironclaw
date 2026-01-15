@@ -19,3 +19,9 @@ theaters/**/venv/
 # Secrets
 .env
 theaters/**/.env
+
+# SQLite / runtime state
+*.db
+*.sqlite
+*.sqlite3
+garrison/ledger.sqlite3

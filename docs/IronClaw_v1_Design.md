@@ -45,10 +45,10 @@ sequenceDiagram
 ```text
 ironclaw/
 ├── .gitignore                      # Standard exclusions
-├── README.md                       # Quickstart and project overview
-├── README_V1.md                    # [This file] Authoritative v1 documentation
-├── docs/                           # Formal specifications and conceptual docs
+├── README.md                       # Portfolio overview and executive summary
+├── docs/                           # Formal specifications and design docs
 │   ├── IronClaw_v1.md              # Authoritative v1 Specification
+│   ├── IronClaw_v1_Design.md       # [This file] Design and architectural rationale
 │   ├── IronClaw_task_list_mvp.md   # Original MVP task list
 │   ├── contracts.pdf               # Project contracts
 │   ├── Section-1-Overview.md       # Architectural overview
