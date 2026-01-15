@@ -7,7 +7,7 @@ It is built around a simple premise:
 > Execution units are disposable.  
 > Mission state is permanent.
 
-IronClaw enforces this by combining an append-only event ledger, git-backed worktrees, and strictly stateless execution units.
+IronClaw enforces this by combining an append-only event ledger, Git-backed worktrees, and strictly stateless execution units.
 
 ---
 
@@ -38,7 +38,7 @@ IronClaw is split into five core services, each with a single responsibility:
   Append-only source of truth for all mission and order state.
 
 - **Vault**  
-  Owns git worktree lifecycle, isolation, and archival.
+  Owns Git worktree lifecycle, isolation, and archival.
 
 - **Worker**  
   Stateless execution unit. Runs once, writes artifacts and an After Action Report, commits, exits.
@@ -66,7 +66,7 @@ python3 ironclaw.py chat "Hello IronClaw"
 This will:
 1. Start the full local service stack
 2. Submit a mission
-3. Execute it in an isolated git worktree
+3. Execute it in an isolated Git worktree
 4. Persist artifacts and lifecycle events
 
 ---
