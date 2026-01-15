@@ -46,9 +46,14 @@ class IronClawMonitor:
         self.check_orphans()
 
     def check_stalls_and_integrity(self, events: List[Dict[str, Any]]):
+        if not isinstance(events, list):
+            print(f"Monitor expected list of events, got {type(events)}")
+            return
+
         # Group events by order_id
         orders = {}
         for ev in events:
+            if not isinstance(ev, dict): continue
             oid = ev.get("order_id")
             if not oid: continue
             if oid not in orders: orders[oid] = []
