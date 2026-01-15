@@ -5,7 +5,7 @@ The Worker service is responsible for executing single mission orders inside pro
 ## Core Principles
 
 - **Stateless**: The worker preserves no local durable state. Everything is written to the worktree or emitted to the Ledger.
-- **Idempotency (Short-Circuit)**: If an `aar.json` with `status: completed` and matching `attempt` already exists in the worktree, the worker skips execution and re-emits the `ORDER_COMPLETED` event only (skipping `ORDER_RUNNING`).
+- **Idempotency (Short-Circuit)**: If an `aar.json` with `status: completed` and matching `attempt` already exists in the worktree, the worker skips execution. It attempts to re-emit the `ORDER_COMPLETED` event; however, the Ledger deduplicates by `event_id`, ensuring the canonical log remains a single-entry audit trail.
 - **Deterministic Order**: The request payload **always overwrites** `order.json` in the worktree, ensuring retries are deterministic according to the latest request.
 - **Observable**: Real-time progress is recorded via `outputs/heartbeat.json` inside the worktree.
 - **Traceable**: Every lifecycle stage emits an event to the Ledger service, including the specific `stage` of failure.
