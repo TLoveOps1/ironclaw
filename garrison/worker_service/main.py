@@ -34,8 +34,27 @@ def validate_worktree_path(path_str: str) -> Path:
     
     return path
 
+from runner import WorkerRunner
+
 @app.post("/execute", response_model=ExecutionResponse)
 async def execute_order(req: ExecutionRequest):
-    # This will be implemented in the next step
     wt_path = validate_worktree_path(req.worktree_path)
-    return ExecutionResponse(order_id=req.order_id, status="accepted")
+    
+    runner = WorkerRunner(
+        ledger_url=LEDGER_URL,
+        api_key=IOINTELLIGENCE_API_KEY,
+        api_base=IO_API_BASE_URL
+    )
+    
+    result = runner.run(req.dict())
+    
+    if result["status"] == "failed":
+        # We still return 200 but with status="failed" in response body as per IronClaw explicit failure mode
+        pass
+        
+    return ExecutionResponse(
+        order_id=req.order_id,
+        status=result["status"],
+        order_head=result.get("order_head"),
+        error=result.get("error")
+    )
