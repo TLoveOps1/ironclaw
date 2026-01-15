@@ -54,7 +54,9 @@ async def execute_order(req: ExecutionRequest):
         
     return ExecutionResponse(
         order_id=req.order_id,
+        run_id=req.run_id,
         status=result["status"],
         order_head=result.get("order_head"),
+        stage=result.get("stage"),
         error=result.get("error")
     )

@@ -5,7 +5,7 @@ import requests
 from pathlib import Path
 from datetime import datetime, timezone
 from openai import OpenAI
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 class WorkerRunner:
     def __init__(self, ledger_url: str, api_key: str, api_base: str):
@@ -24,6 +24,7 @@ class WorkerRunner:
             json.dump({"ts": self.utc_iso(), "stage": stage}, f)
 
     def emit_ledger_event(self, req_data: Dict[str, Any], status: str, event_type: str, payload_extra: Dict[str, Any] = None):
+        # Idempotency: request_id maps to event_id
         event_id = f"worker-{req_data['order_id']}-{req_data['attempt']}-{status}"
         if req_data.get("request_id"):
             event_id = f"{req_data['request_id']}-{status}"
@@ -31,6 +32,8 @@ class WorkerRunner:
         payload = {
             "status": status,
             "attempt": req_data["attempt"],
+            "run_id": req_data["run_id"],
+            "order_id": req_data["order_id"],
             "worktree": req_data["worktree_path"],
             **(payload_extra or {})
         }
@@ -48,18 +51,53 @@ class WorkerRunner:
         except Exception as e:
             print(f"Failed to emit ledger event: {e}")
 
+    def check_already_completed(self, wt_path: Path, order_id: str, attempt: int) -> Optional[str]:
+        # Short-circuit behavior: if aar.json exists + status=completed + git commit matches
+        aar_path = wt_path / "aar.json"
+        if aar_path.exists():
+            try:
+                aar = json.loads(aar_path.read_text())
+                if aar.get("status") == "completed" and aar.get("attempt") == attempt:
+                    # Check if commit exists
+                    order_head = subprocess.check_output(
+                        ["git", "rev-parse", "HEAD"], cwd=str(wt_path), text=True
+                    ).strip()
+                    return order_head
+            except:
+                pass
+        return None
+
     def run(self, req_data: Dict[str, Any]) -> Dict[str, Any]:
         wt_path = Path(req_data["worktree_path"])
         order_id = req_data["order_id"]
+        run_id = req_data["run_id"]
+        attempt = req_data["attempt"]
+        stage = "starting"
+        started_at = self.utc_iso()
         
         try:
+            # 0. Idempotency Check
+            existing_head = self.check_already_completed(wt_path, order_id, attempt)
+            if existing_head:
+                print(f"Order {order_id} attempt {attempt} already completed. Short-circuiting.")
+                # Re-emit completion event to be sure
+                self.emit_ledger_event(req_data, "completed", "ORDER_COMPLETED", {
+                    "order_head": existing_head,
+                    "stage": "done",
+                    "note": "short-circuit"
+                })
+                return {"status": "completed", "order_head": existing_head, "stage": "done"}
+
             # 1. Start
-            self.write_heartbeat(wt_path, "starting")
-            self.emit_ledger_event(req_data, "running", "ORDER_RUNNING")
+            stage = "initializing"
+            self.write_heartbeat(wt_path, stage)
+            self.emit_ledger_event(req_data, "running", "ORDER_RUNNING", {"stage": stage})
             
-            # 2. Write order files (idempotent)
+            # 2. Write order files (deterministic overwrite)
             (wt_path / "order.json").write_text(json.dumps({
                 "order_id": order_id,
+                "run_id": run_id,
+                "attempt": attempt,
                 "objective": req_data["objective"],
                 "prompt": req_data["prompt"],
                 "model": req_data["model"],
@@ -69,7 +107,8 @@ class WorkerRunner:
             (wt_path / "task.md").write_text(f"# {order_id}\n\n{req_data['objective']}\n", encoding="utf-8")
 
             # 3. Call Model
-            self.write_heartbeat(wt_path, "calling_model")
+            stage = "calling_model"
+            self.write_heartbeat(wt_path, stage)
             
             response = self.client.chat.completions.create(
                 model=req_data["model"],
@@ -78,10 +117,12 @@ class WorkerRunner:
             )
             text = response.choices[0].message.content
             
-            self.write_heartbeat(wt_path, "model_returned")
+            stage = "model_returned"
+            self.write_heartbeat(wt_path, stage)
             
             # 4. Write Artifacts (atomic promotion logic)
-            self.write_heartbeat(wt_path, "writing_artifacts")
+            stage = "writing_artifacts"
+            self.write_heartbeat(wt_path, stage)
             
             out_dir = wt_path / "outputs"
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -90,12 +131,15 @@ class WorkerRunner:
             
             aar = {
                 "order_id": order_id,
+                "run_id": run_id,
+                "attempt": attempt,
                 "status": "completed",
-                "started_at": self.utc_iso(), # Simplified for MVP
+                "stage": "done",
+                "started_at": started_at,
                 "ended_at": self.utc_iso(),
-                "summary": req_data["objective"],
+                "model": {"name": req_data["model"], "temperature": req_data["temperature"]},
                 "artifacts": [{"path": "outputs/model_output.txt", "type": "text/plain"}],
-                "model": {"name": req_data["model"], "temperature": req_data["temperature"]}
+                "error": None
             }
             tmp_aar = wt_path / "_tmp_aar.json"
             tmp_aar.write_text(json.dumps(aar, indent=2), encoding="utf-8")
@@ -105,40 +149,52 @@ class WorkerRunner:
             tmp_aar.replace(wt_path / "aar.json")
             
             # 5. Git Commit
-            self.write_heartbeat(wt_path, "committing")
-            subprocess.run(["git", "add", "."], cwd=str(wt_path), check=True)
+            stage = "committing"
+            self.write_heartbeat(wt_path, stage)
+            subprocess.run(["git", "add", "."], cwd=str(wt_path), check=True, capture_output=True)
             subprocess.run([
-                "git", "commit", "-m", f"worker: {order_id} attempt {req_data['attempt']}"
-            ], cwd=str(wt_path), check=True)
+                "git", "commit", "-m", f"worker: {order_id} attempt {attempt}"
+            ], cwd=str(wt_path), check=True, capture_output=True)
             
             order_head = subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=str(wt_path), text=True
             ).strip()
             
             # 6. Done
-            self.write_heartbeat(wt_path, "done")
+            stage = "done"
+            self.write_heartbeat(wt_path, stage)
             self.emit_ledger_event(req_data, "completed", "ORDER_COMPLETED", {
                 "order_head": order_head,
+                "stage": stage,
                 "artifacts": aar["artifacts"]
             })
             
-            return {"status": "completed", "order_head": order_head}
+            return {"status": "completed", "order_head": order_head, "stage": stage}
 
         except Exception as e:
             error_msg = str(e)
-            print(f"Worker failed: {error_msg}")
+            print(f"Worker failed at stage {stage}: {error_msg}")
             
-            # Write failed AAR if possible
+            # Write failed AAR (Locked Schema)
             try:
                 failed_aar = {
                     "order_id": order_id,
+                    "run_id": run_id,
+                    "attempt": attempt,
                     "status": "failed",
-                    "error": error_msg,
-                    "ended_at": self.utc_iso()
+                    "stage": stage,
+                    "started_at": started_at,
+                    "ended_at": self.utc_iso(),
+                    "model": {"name": req_data["model"], "temperature": req_data["temperature"]},
+                    "artifacts": [],
+                    "error": error_msg
                 }
                 (wt_path / "aar.json").write_text(json.dumps(failed_aar, indent=2), encoding="utf-8")
             except:
                 pass
                 
-            self.emit_ledger_event(req_data, "failed", "ORDER_FAILED", {"error": error_msg})
-            return {"status": "failed", "error": error_msg}
+            self.emit_ledger_event(req_data, "failed", "ORDER_FAILED", {
+                "error": error_msg,
+                "stage": stage
+            })
+            return {"status": "failed", "error": error_msg, "stage": stage}
