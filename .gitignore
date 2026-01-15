@@ -25,3 +25,4 @@ theaters/**/.env
 *.sqlite
 *.sqlite3
 garrison/ledger.sqlite3
+theaters/demo/repo/
