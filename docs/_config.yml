@@ -1,8 +1,7 @@
-theme: jekyll-theme-cayman
+theme: jekyll-theme-architect
 
 title: IronClaw
-description: A mission execution and orchestration framework for durable, auditable AI runs.
+description: Durable, auditable AI mission execution.
 
-# Helpful for project pages (site lives at /ironclaw)
 url: "https://tloveops1.github.io"
 baseurl: "/ironclaw"
