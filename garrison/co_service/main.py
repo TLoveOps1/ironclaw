@@ -69,6 +69,20 @@ async def chat(req: ChatRequest):
         logic.emit_event(run_id, order_id, request_id, "ORDER_WORKTREE_REQUESTED", {})
         worktree_path = logic.provision_worktree(theater, order_id)
         logic.emit_event(run_id, order_id, request_id, "ORDER_WORKTREE_READY", {"worktree_path": worktree_path})
+
+        # If this is a filesystem_agent.call_summary mission, prepare inputs/context files.
+        if playbook and playbook.mission_type == "filesystem_agent.call_summary":
+            logic.write_filesystem_call_summary_inputs(
+                worktree_path=worktree_path,
+                mission_type=playbook.mission_type,
+                run_id=run_id,
+                order_id=order_id,
+                request_id=request_id,
+                theater=theater,
+                objective=objective,
+                message=req.message,
+                overrides=overrides,
+            )
         
         # 2.5 Resolve Model Policy
         resolved_model_config = logic.resolve_model_config(

@@ -121,7 +121,94 @@ class COLogic:
         if "max_tokens" in overrides:
             config["max_tokens"] = overrides["max_tokens"]
 
-        # Add profile name for provenance
         config["profile_name"] = model_profile
         
         return config
+
+    def write_filesystem_call_summary_inputs(
+        self,
+        worktree_path: str,
+        *,
+        mission_type: str,
+        run_id: str,
+        order_id: str,
+        request_id: str,
+        theater: str,
+        objective: str,
+        message: str,
+        overrides: dict,
+    ) -> None:
+        """
+        Prepare the inputs/ and context/ files for the filesystem_agent.call_summary mission.
+
+        This is a thin helper that writes files inside the Vault-provisioned worktree.
+        It does not talk to external services.
+        """
+        root = Path(worktree_path)
+        inputs_dir = root / "inputs"
+        context_dir = root / "context"
+
+        inputs_dir.mkdir(parents=True, exist_ok=True)
+        context_dir.mkdir(parents=True, exist_ok=True)
+
+        # 1) Call transcript as markdown
+        call_md = (
+            f"# Call Summary Mission\n\n"
+            f"Mission type: {mission_type}\n"
+            f"Run: {run_id}  Order: {order_id}  Request: {request_id}\n"
+            f"Theater: {theater}\n"
+            f"Objective: {objective}\n\n"
+            f"---\n\n"
+            f"{message}\n"
+        )
+        (inputs_dir / "call.md").write_text(call_md, encoding="utf-8")
+
+        # 2) Mission payload as JSON
+        mission_payload = {
+            "mission_type": mission_type,
+            "run_id": run_id,
+            "order_id": order_id,
+            "request_id": request_id,
+            "theater": theater,
+            "objective": objective,
+            "overrides": overrides or {},
+            "source": "co_service.chat",
+        }
+        (inputs_dir / "mission.json").write_text(
+            json.dumps(mission_payload, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
+        # 3) Fake account context (lightweight CRM-style info)
+        account_name = (overrides or {}).get("account_name") or "Unknown Account"
+        contact_name = (overrides or {}).get("contact_name") or "Unknown Contact"
+
+        account_context = {
+            "account_name": account_name,
+            "contact_name": contact_name,
+            "industry": "Unknown",
+            "current_plan": "Unknown",
+            "renewal_date": None,
+            "account_health": "Unknown",
+        }
+        (context_dir / "account.json").write_text(
+            json.dumps(account_context, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
+        # 4) Summary playbook guidance as markdown
+        playbook_md = """# Summary Playbook
+
+When summarizing a call:
+
+1. Start with a 2–3 sentence high-level summary.
+2. Explicitly list:
+   - risks
+   - blockers
+   - commitments
+3. Extract action items with:
+   - owner
+   - due date (if mentioned)
+   - short description
+"""
+        (context_dir / "playbook.md").write_text(playbook_md, encoding="utf-8")
