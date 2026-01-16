@@ -71,12 +71,23 @@ class WorkerRunner:
         wt_path = Path(req_data["worktree_path"])
         order_id = req_data["order_id"]
         run_id = req_data["run_id"]
+        mission_type = req_data.get("mission_type", "default")
+        
+        print(f"Worker starting mission_type={mission_type} run_id={run_id} order_id={order_id}")
+        
+        if mission_type == "filesystem_agent.call_summary":
+            return self.run_filesystem_call_summary(req_data)
+        else:
+            return self.run_generic(req_data)
+
+    def run_generic(self, req_data: Dict[str, Any]) -> Dict[str, Any]:
+        wt_path = Path(req_data["worktree_path"])
+        order_id = req_data["order_id"]
+        run_id = req_data["run_id"]
         attempt = req_data["attempt"]
         mission_type = req_data.get("mission_type", "default")
         stage = "starting"
         started_at = self.utc_iso()
-        
-        print(f"Worker starting mission_type={mission_type} run_id={run_id} order_id={order_id}")
         
         try:
             # 0. Idempotency Check (Existing v1 logic)
@@ -122,7 +133,7 @@ class WorkerRunner:
             # 3. Deterministic Fingerprinting (Requirement 5)
             resolved_model_config = req_data["resolved_model_config"]
             model_id = resolved_model_config["model"]
-            profile_name = resolved_model_config["profile_name"]
+            profile_name = resolved_model_config.get("profile_name", "unknown") # Safe get
             
             # Normalize prompt for hashing
             normalized_prompt = prompt_content.strip()
@@ -272,6 +283,206 @@ class WorkerRunner:
             
             return {"status": "completed", "order_head": order_head, "stage": stage}
 
+        except Exception as e:
+            error_msg = str(e)
+            print(f"Worker failed at stage {stage}: {error_msg}")
+            
+            try:
+                failed_aar = {
+                    "order_id": order_id,
+                    "run_id": run_id,
+                    "attempt": attempt,
+                    "status": "failed",
+                    "stage": stage,
+                    "started_at": started_at,
+                    "ended_at": self.utc_iso(),
+                    "error": error_msg
+                }
+                (wt_path / "aar.json").write_text(json.dumps(failed_aar, indent=2), encoding="utf-8")
+            except:
+                pass
+                
+            self.emit_ledger_event(req_data, "failed", "ORDER_FAILED", {
+                "error": error_msg,
+                "stage": stage
+            })
+            return {"status": "failed", "error": error_msg, "stage": stage}
+
+    def run_filesystem_call_summary(self, req_data: Dict[str, Any]) -> Dict[str, Any]:
+        wt_path = Path(req_data["worktree_path"])
+        order_id = req_data["order_id"]
+        run_id = req_data["run_id"]
+        attempt = req_data["attempt"]
+        mission_type = req_data.get("mission_type")
+        resolved_model_config = req_data["resolved_model_config"]
+        profile_name = resolved_model_config.get("profile_name", "unknown")
+        model_id = resolved_model_config["model"]
+        
+        stage = "starting"
+        started_at = self.utc_iso()
+        
+        try:
+            # 0. Check completion (reuse existing)
+            existing_head = self.check_already_completed(wt_path, order_id, attempt)
+            if existing_head:
+                print(f"Order {order_id} attempt {attempt} already completed. Short-circuiting.")
+                self.emit_ledger_event(req_data, "completed", "ORDER_COMPLETED", {
+                    "order_head": existing_head,
+                    "stage": "done",
+                    "note": "short-circuit"
+                })
+                return {"status": "completed", "order_head": existing_head, "stage": "done"}
+
+            # 1. Start logic
+            stage = "initializing"
+            self.write_heartbeat(wt_path, stage)
+            self.emit_ledger_event(req_data, "running", "ORDER_RUNNING", {"stage": stage})
+
+            # 2. Read context
+            inputs_dir = wt_path / "inputs"
+            context_dir = wt_path / "context"
+            
+            call_content = ""
+            if (inputs_dir / "call.md").exists():
+                 call_content = (inputs_dir / "call.md").read_text(encoding="utf-8")
+            
+            account_info = "{}"
+            if (context_dir / "account.json").exists():
+                account_info = (context_dir / "account.json").read_text(encoding="utf-8")
+                
+            playbook_content = ""
+            if (context_dir / "playbook.md").exists():
+                playbook_content = (context_dir / "playbook.md").read_text(encoding="utf-8")
+
+            # 3. Build Prompt
+            system_prompt = (
+                "You are an AI assistant processing a customer call transcript.\n"
+                "Your goal is to produce a concise summary and extract actionable items.\n"
+                "The user will provide the transcript and account details.\n"
+                "You must respond in the following format:\n\n"
+                "# Summary\n"
+                "[Your summary here]\n\n"
+                "---\n\n"
+                "# Action Items\n"
+                "- [Owner] Description\n\n"
+                "Follow any specific guidance provided in the Playbook section."
+            )
+            
+            user_prompt = (
+                f"# Account Info\n{account_info}\n\n"
+                f"# Playbook Guidance\n{playbook_content}\n\n"
+                f"# Call Transcript\n{call_content}"
+            )
+            
+            full_prompt = f"{system_prompt}\n\n{user_prompt}"
+            
+            # 4. Call Model
+            stage = "calling_model"
+            self.write_heartbeat(wt_path, stage)
+            
+            prompt_hash = hashlib.sha256(full_prompt.encode()).hexdigest()
+            model_event_payload = {
+                "profile_name": profile_name,
+                "model_id": model_id,
+                "prompt_hash": prompt_hash,
+                "attempt": attempt,
+                "note": "filesystem_agent"
+            }
+            self.emit_ledger_event(req_data, "started", "worker.model_call.started", model_event_payload)
+            
+            text, usage, latency = model_io.call_model(resolved_model_config, full_prompt)
+            
+            response_hash = hashlib.sha256(text.encode()).hexdigest()
+            completed_payload = {
+                **model_event_payload,
+                "response_hash": response_hash,
+                "latency_ms": latency
+            }
+            self.emit_ledger_event(req_data, "completed", "worker.model_call.completed", completed_payload)
+
+            # 5. Parse and Write Outputs
+            stage = "writing_artifacts"
+            self.write_heartbeat(wt_path, stage)
+            
+            outputs_dir = wt_path / "outputs"
+            outputs_dir.mkdir(parents=True, exist_ok=True)
+            
+            (outputs_dir / "model_output.txt").write_text(text, encoding="utf-8")
+            
+            # Parsing logic
+            summary = text
+            action_items = "No action items parsed."
+            
+            parts = text.split("# Action Items")
+            if len(parts) > 1:
+                summary_part = parts[0]
+                action_items_part = parts[1]
+                
+                summary_part = summary_part.replace("# Summary", "").strip()
+                if summary_part.endswith("---"):
+                    summary_part = summary_part[:-3].strip()
+                    
+                summary = summary_part
+                action_items = action_items_part.strip()
+            else:
+                 parts = text.split("---")
+                 if len(parts) > 1:
+                      summary = parts[0].replace("# Summary", "").strip()
+                      action_items = parts[1].replace("# Action Items", "").strip()
+
+            (outputs_dir / "summary.md").write_text(summary, encoding="utf-8")
+            (outputs_dir / "action_items.md").write_text(action_items, encoding="utf-8")
+            
+            # 6. AAR
+            aar = {
+                "order_id": order_id,
+                "run_id": run_id,
+                "mission_type": mission_type,
+                "attempt": attempt,
+                "status": "completed",
+                "stage": "done",
+                "started_at": started_at,
+                "ended_at": self.utc_iso(),
+                "model_profile": profile_name,
+                "model_id": model_id,
+                "prompt_hash": prompt_hash,
+                "response_hash": response_hash,
+                "latency_ms": latency,
+                "usage": usage,
+                "artifacts": [
+                     {"path": "inputs/call.md", "type": "text/markdown"},
+                     {"path": "outputs/summary.md", "type": "text/markdown"},
+                     {"path": "outputs/action_items.md", "type": "text/markdown"},
+                     {"path": "outputs/model_output.txt", "type": "text/plain"}
+                ],
+                "error": None
+            }
+            
+            (wt_path / "aar.json").write_text(json.dumps(aar, indent=2), encoding="utf-8")
+
+            # 7. Commit
+            stage = "committing"
+            self.write_heartbeat(wt_path, stage)
+            subprocess.run(["git", "add", "."], cwd=str(wt_path), check=True, capture_output=True)
+            subprocess.run([
+                "git", "commit", "-m", f"worker: {order_id} attempt {attempt} (filesystem)"
+            ], cwd=str(wt_path), check=True, capture_output=True)
+            
+            order_head = subprocess.check_output(
+                 ["git", "rev-parse", "HEAD"], cwd=str(wt_path), text=True
+            ).strip()
+
+            # 8. Done
+            stage = "done"
+            self.write_heartbeat(wt_path, stage)
+            self.emit_ledger_event(req_data, "completed", "ORDER_COMPLETED", {
+                "order_head": order_head,
+                "stage": stage,
+                "artifacts": aar["artifacts"]
+            })
+            
+            return {"status": "completed", "order_head": order_head, "stage": stage}
+            
         except Exception as e:
             error_msg = str(e)
             print(f"Worker failed at stage {stage}: {error_msg}")
