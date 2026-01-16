@@ -13,7 +13,7 @@ from models import ExecutionRequest, ExecutionResponse
 app = FastAPI(title="IronClaw Worker Service")
 
 # Configuration
-IRONCLAW_THEATER_ROOT = Path(os.environ.get("IRONCLAW_THEATER_ROOT", "/home/tlove96/ironclaw/theaters")).resolve()
+IRONCLAW_THEATER_ROOT = Path(os.environ.get("IRONCLAW_THEATER_ROOT", "/home/tyler/dev/ironclaw/theaters")).resolve()
 LEDGER_URL = os.environ.get("LEDGER_URL", "http://127.0.0.1:8000")
 IO_API_BASE_URL = os.environ.get("IO_API_BASE_URL", "https://api.intelligence.io.solutions/api/v1")
 IOINTELLIGENCE_API_KEY = os.environ.get("IOINTELLIGENCE_API_KEY", "")

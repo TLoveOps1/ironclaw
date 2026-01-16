@@ -8,8 +8,8 @@ def call_model(config: Dict[str, Any], prompt: str) -> Tuple[str, Dict[str, Any]
     Calls the model based on resolved config.
     Returns: (response_text, usage_dict, latency_ms)
     """
-    api_key = os.environ.get("IO_INTELLIGENCE_API_KEY", "sk-placeholder")
-    base_url = os.environ.get("IO_INTELLIGENCE_BASE_URL", "https://api.openai.com/v1")
+    api_key = os.environ.get("IO_INTELLIGENCE_API_KEY") or os.environ.get("OPENAI_API_KEY") or "sk-placeholder"
+    base_url = os.environ.get("IO_INTELLIGENCE_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"
     
     client = OpenAI(api_key=api_key, base_url=base_url)
     

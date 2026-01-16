@@ -91,10 +91,18 @@ class COLogic:
         return None
 
     def resolve_model_config(self, theater: str, model_profile: str, overrides: Dict[str, Any]) -> Dict[str, Any]:
-        policy_path = Path(f"/home/tlove96/ironclaw/theaters/{theater}/repo/policy/model_policy.json")
+        # Try theater root policy.json first (MVP structure)
+        policy_path = Path(f"/home/tyler/dev/ironclaw/theaters/{theater}/policy.json")
+        if not policy_path.exists():
+             # Fallback to repo/policy/model_policy.json if that structure exists
+            policy_path = Path(f"/home/tyler/dev/ironclaw/theaters/{theater}/repo/policy/model_policy.json")
+
         if not policy_path.exists():
             # Fallback to default theater if specific theater policy doesn't exist
-            policy_path = Path("/home/tlove96/ironclaw/theaters/default/repo/policy/model_policy.json")
+            policy_path = Path("/home/tyler/dev/ironclaw/theaters/default/policy.json")
+        
+        if not policy_path.exists():
+             policy_path = Path("/home/tyler/dev/ironclaw/theaters/default/repo/policy/model_policy.json")
         
         if not policy_path.exists():
             raise HTTPException(status_code=500, detail=f"Model policy not found for theater {theater}")

@@ -5,14 +5,16 @@ from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional
 
-IRONCLAW_ROOT = Path("/home/tlove96/ironclaw").resolve()
+IRONCLAW_ROOT = Path("/home/tyler/dev/ironclaw").resolve()
 THEATERS_DIR = IRONCLAW_ROOT / "theaters"
 
 class VaultError(Exception):
     pass
 
 def validate_theater(theater: str) -> Path:
+    print(f"DEBUG: validating theater '{theater}' against '{THEATERS_DIR}'")
     theater_path = (THEATERS_DIR / theater).resolve()
+    print(f"DEBUG: theater_path '{theater_path}'")
     if not theater_path.is_relative_to(THEATERS_DIR):
         raise VaultError(f"Invalid theater path: {theater}")
     if not theater_path.exists():
@@ -21,14 +23,18 @@ def validate_theater(theater: str) -> Path:
 
 def get_repo_path(theater_path: Path) -> Path:
     repo_path = theater_path / "repo"
+    print(f"DEBUG: looking for repo at '{repo_path}'")
     if not repo_path.exists():
         # Fallback to theater root if 'repo' dir doesn't exist (MVP structure varies)
         if (theater_path / ".git").exists():
+            print(f"DEBUG: found .git at theater root")
             return theater_path
+        print(f"DEBUG: repo not found")
         raise VaultError(f"Git repository not found in theater: {theater_path}")
     return repo_path
 
 def create_worktree(theater: str, order_id: str, base_ref: str = "master") -> str:
+    print(f"DEBUG: create_worktree theater={theater} order_id={order_id}")
     theater_path = validate_theater(theater)
     repo_path = get_repo_path(theater_path)
     worktree_path = (theater_path / "worktrees" / order_id).resolve()
@@ -43,8 +49,10 @@ def create_worktree(theater: str, order_id: str, base_ref: str = "master") -> st
     worktree_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
+        cmd = ["git", "worktree", "add", "-b", order_id, str(worktree_path), base_ref]
+        print(f"DEBUG: running {cmd} in {repo_path}")
         subprocess.run(
-            ["git", "worktree", "add", "-b", order_id, str(worktree_path), base_ref],
+            cmd,
             cwd=str(repo_path),
             check=True,
             capture_output=True,
@@ -52,6 +60,7 @@ def create_worktree(theater: str, order_id: str, base_ref: str = "master") -> st
         )
         return str(worktree_path), True
     except subprocess.CalledProcessError as e:
+        print(f"DEBUG: git failed: {e.stderr}")
         raise VaultError(f"Git worktree creation failed: {e.stderr}")
 
 def get_worktree_status(theater: str, order_id: str) -> Optional[str]:

@@ -9,5 +9,22 @@
     "require_artifact": true,
     "require_aar": true
   },
-  "notes": "Declarative defaults only. Enforcement is handled in code."
+  "notes": "Declarative defaults only. Enforcement is handled in code.",
+  "allowlist_models": [
+    "gpt-4o",
+    "llama3.2:3b",
+    "claude-3-opus-20240229"
+  ],
+  "profiles": {
+    "executor_default": {
+      "model": "llama3.2:3b",
+      "temperature": 0.2,
+      "max_tokens": 4096
+    },
+    "planner_default": {
+      "model": "llama3.2:3b",
+      "temperature": 0.7,
+      "max_tokens": 4096
+    }
+  }
 }

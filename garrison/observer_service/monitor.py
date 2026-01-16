@@ -14,7 +14,7 @@ class IronClawMonitor:
         self.ledger_url = config["ledger_url"]
         self.vault_url = config["vault_url"]
         self.theater = config["theater"]
-        self.theater_root = Path(os.environ.get("IRONCLAW_THEATER_ROOT", "/home/tlove96/ironclaw/theaters"))
+        self.theater_root = Path(os.environ.get("IRONCLAW_THEATER_ROOT", "/home/tyler/dev/ironclaw/theaters"))
         self.stats = {
             "last_poll": 0,
             "active_runs": 0,
