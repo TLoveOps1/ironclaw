@@ -28,3 +28,5 @@ theaters/**/.env
 garrison/ledger.sqlite3
 theaters/demo/repo/
 /theaters/docker-compose.yml
+theaters/*/vault_cache/
+theaters/*/.keep
