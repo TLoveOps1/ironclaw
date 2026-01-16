@@ -72,8 +72,11 @@ class WorkerRunner:
         order_id = req_data["order_id"]
         run_id = req_data["run_id"]
         attempt = req_data["attempt"]
+        mission_type = req_data.get("mission_type", "default")
         stage = "starting"
         started_at = self.utc_iso()
+        
+        print(f"Worker starting mission_type={mission_type} run_id={run_id} order_id={order_id}")
         
         try:
             # 0. Idempotency Check (Existing v1 logic)
@@ -222,6 +225,7 @@ class WorkerRunner:
             aar = {
                 "order_id": order_id,
                 "run_id": run_id,
+                "mission_type": mission_type,
                 "attempt": attempt,
                 "status": "completed",
                 "stage": "done",

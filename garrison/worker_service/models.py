@@ -19,6 +19,9 @@ class ExecutionRequest(BaseModel):
     
     # Idempotency
     request_id: Optional[str] = None
+    
+    # Mission Context
+    mission_type: str = "default"
 
 class ExecutionResponse(BaseModel):
     order_id: str

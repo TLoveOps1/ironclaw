@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from models import ChatRequest, ChatResponse
 from logic import COLogic
-from .playbooks import get_playbook
+from playbooks import get_playbook
 
 app = FastAPI(title="IronClaw CO Service")
 
@@ -53,6 +53,9 @@ async def chat(req: ChatRequest):
     playbook = get_playbook(mission_type)
     if playbook:
         print(f"DEBUG: Planning with playbook: {playbook.mission_type} - {playbook.description}")
+    else:
+        # Normalize to "default" when no playbook is found
+        mission_type = "default"
     
     # 1. Emit Initial Events
     # ...
@@ -103,7 +106,8 @@ async def chat(req: ChatRequest):
             "resolved_model_config": resolved_model_config, # Resolved
             "stall_seconds": req.stall_seconds or STALL_SECONDS,
             "hard_timeout_seconds": req.hard_timeout_seconds or HARD_TIMEOUT,
-            "request_id": request_id
+            "request_id": request_id,
+            "mission_type": mission_type
         }
         
         worker_res = logic.execute_worker(worker_req)
