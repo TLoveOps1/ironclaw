@@ -1,3 +1,10 @@
+"""
+Verification script for the filesystem_agent.call_summary mission.
+
+Tests both default mission behavior and the specialized filesystem agent execution path.
+Verifies that the Worker correctly generates summary.md, action_items.md, and model_output.txt
+artifacts for filesystem missions.
+"""
 import requests
 import json
 import time
@@ -54,7 +61,7 @@ def stop_stack():
     print("Stopping stack...")
     subprocess.run(["python3", "garrison/cli/ironclaw.py", "stack", "down"], check=True)
 
-def test_scenario(name, payload, expected_mission_type):
+def test_scenario(name, payload, expected_mission_type, expected_artifacts=None):
     print(f"\n--- Running Scenario: {name} ---")
     print(f"Expected mission_type: {expected_mission_type}")
     
@@ -74,16 +81,12 @@ def test_scenario(name, payload, expected_mission_type):
     print(f"Order ID: {order_id}")
     
     # Wait for completion (poll archive or check status)
-    # The script currently just checks existing archive or active.
-    # We need to wait for worker to finish to see the AAR.
-    # Since verification involves 'stack up' which is async effectively, we wait a bit.
-    
     time.sleep(5) 
     
     # Check archive
     archive_dir = THEATER_ROOT / "archive"
     # Find newest archive for this order
-    possible_archives = list(archive_dir.glob(f"*{order_id}*.tar.gz"))
+    possible_archives = sorted(list(archive_dir.glob(f"*{order_id}*.tar.gz")), key=os.path.getmtime, reverse=True)
     if not possible_archives:
         print("[FAIL] Archive not found. Worker may have failed or timed out.")
         return
@@ -104,6 +107,15 @@ def test_scenario(name, payload, expected_mission_type):
                     print(f"[FAIL] AAR mission_type mismatch. Expected '{expected_mission_type}', got '{actual_mt}'")
             else:
                 print(f"[FAIL] aar.json not found in archive")
+
+            if expected_artifacts:
+                for artifact in expected_artifacts:
+                    try:
+                        tar.getmember(f"{order_id}/{artifact}")
+                        print(f"[PASS] Found artifact: {artifact}")
+                    except KeyError:
+                        print(f"[FAIL] Missing artifact: {artifact}")
+
         except KeyError:
              print(f"[FAIL] order_id directory not found in archive or structure unexpected")
 
@@ -129,7 +141,12 @@ def test_filesystem_agent():
             "contact_name": "Jane Smith"
         }
     }
-    test_scenario("filesystem", payload_fs, "filesystem_agent.call_summary")
+    test_scenario("filesystem", payload_fs, "filesystem_agent.call_summary",
+                  expected_artifacts=[
+                      "outputs/summary.md",
+                      "outputs/action_items.md",
+                      "outputs/model_output.txt"
+                  ])
 
 
 if __name__ == "__main__":
