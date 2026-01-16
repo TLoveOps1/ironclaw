@@ -27,3 +27,4 @@ theaters/**/.env
 *.sqlite3
 garrison/ledger.sqlite3
 theaters/demo/repo/
+/theaters/docker-compose.yml
