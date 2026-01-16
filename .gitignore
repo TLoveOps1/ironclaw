@@ -4,6 +4,7 @@ theaters/**/worktrees/
 theaters/**/archive/
 theaters/**/runs.jsonl
 theaters/**/orders.jsonl
+theaters/docker-compose.yaml
 
 # Python
 __pycache__/
