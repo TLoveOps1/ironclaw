@@ -73,6 +73,88 @@ This will:
 
 ---
 
+## Filesystem Agent Demo (Call Summary Mission)
+
+IronClaw includes a working example of a **filesystem-based agent** that follows the
+"filesystem + execution" pattern popularized by modern agent runtimes.
+
+### What this demo does
+
+The `filesystem_agent.call_summary` mission demonstrates how IronClaw can:
+
+- plan a mission in the CO (Command & Oversight) service
+- provision an isolated worktree via Vault
+- materialize inputs and context as files
+- execute a mission-specific Worker path
+- produce durable, auditable artifacts
+
+Given a short call transcript, the agent:
+
+1. reads the transcript and contextual files from disk
+2. calls a language model once to summarize the call
+3. extracts action items
+4. writes results back to the filesystem
+
+### Worktree layout
+
+For a single mission, the Worker operates inside an isolated worktree:
+
+```text
+inputs/
+  call.md
+  mission.json
+context/
+  account.json
+  playbook.md
+outputs/
+  summary.md
+  action_items.md
+  model_output.txt
+aar.json
+```
+
+- `inputs/` and `context/` are written by the CO service
+- `outputs/` and `aar.json` are written by the Worker
+
+### Why this matters
+
+This pattern makes agent behavior:
+
+- **inspectable** (you can open every file)
+- **reproducible** (rerun the same worktree)
+- **auditable** (AAR records inputs, outputs, and metadata)
+
+The filesystem agent is intentionally simple:
+
+- one mission
+- one model call
+- no hidden state
+
+More complex agents (multi-step plans, tool loops, retries) can be built on top of the same contract.
+
+### How to run the demo locally
+
+```bash
+cd garrison/cli
+python3 ironclaw.py stack up
+python3 ironclaw.py chat \
+  --mission-type filesystem_agent.call_summary \
+  --account-name "Acme Corp" \
+  --contact-name "Jane Smith" \
+  "Jane called about renewal concerns and uptime issues."
+```
+
+The Worker will:
+1. Read the call transcript from `inputs/call.md`
+2. Read account context from `context/account.json`
+3. Call the model to generate a summary and action items
+4. Write `outputs/summary.md` and `outputs/action_items.md`
+5. Commit everything to the worktree and archive it
+
+You can inspect the worktree in `theaters/demo/worktrees/` or the archive in `theaters/demo/archive/`.
+
+---
+
 ## Repository structure
 
 ```text
