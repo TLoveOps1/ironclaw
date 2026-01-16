@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from models import ChatRequest, ChatResponse
 from logic import COLogic
+from playbooks import get_playbook
 
 app = FastAPI(title="IronClaw CO Service")
 
@@ -44,7 +45,14 @@ async def chat(req: ChatRequest):
     objective = req.objective or f"Process chat: {req.message[:50]}..."
     keep_wt = req.keep_worktree if req.keep_worktree is not None else KEEP_WORKTREE
     
-    # ... (rest of the logic)
+    # Playbook lookup (v0 integration)
+    # We peek into model_overrides to see if a mission_type was requested,
+    # since we cannot modify the ChatRequest schema yet.
+    mission_type = req.model_overrides.get("mission_type", "default")
+    playbook = get_playbook(mission_type)
+    if playbook:
+        print(f"DEBUG: Planning with playbook: {playbook.mission_type} - {playbook.description}")
+    
     # 1. Emit Initial Events
     # ...
     logic.emit_event(run_id, order_id, request_id, "RUN_CREATED", {"message": req.message})
