@@ -111,11 +111,30 @@ This will:
 
 ---
 
+## Releases
+
+IronClaw uses tagged, frozen releases to mark stable milestones.
+
+- **Latest release:**  
+  **v1.1.0 — Filesystem Agent Demo**  
+  Adds a filesystem-based agent (`filesystem_agent.call_summary`) with durable inputs, outputs, and AARs.  
+  https://github.com/TLoveOps1/ironclaw/releases/tag/v1.1.0
+
+- **Previous release:**  
+  **v1.0.0 — Frozen Core Architecture**  
+  Establishes the baseline CO / Vault / Worker / Ledger architecture and execution guarantees.  
+  https://github.com/TLoveOps1/ironclaw/releases/tag/v1.0.0
+
+All releases:  
+https://github.com/TLoveOps1/ironclaw/releases
+
+---
+
 ## Learn more
 
 - **Spec** — [IronClaw_v1.md](IronClaw_v1.md)
 - **Design deep dive** — [IronClaw_v1_Design.md](IronClaw_v1_Design.md)
 - **GitHub repository** — [TLoveOps1/ironclaw](https://github.com/TLoveOps1/ironclaw)
-- **Release notes** — [GitHub Release v1.1](https://github.com/TLoveOps1/ironclaw/releases/tag/v1.1)
+- **Releases** — https://github.com/TLoveOps1/ironclaw/releases 
 
 IronClaw prioritizes correctness, auditability, and operator control over raw throughput or autonomy.
