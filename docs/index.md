@@ -173,10 +173,18 @@ IronClaw uses tagged, frozen releases to mark stable milestones.
 
 ---
 
+### How to Read This System
+> **Doctrine uses role names** (CO, Assault Unit, Observer) to describe authority and behavior.  
+> **Implementation uses service names** (co_service, worker_service, observer_service) to describe code.  
+> See [IronClaw_Complete_Spec.md §2](IronClaw_Complete_Spec.md#2-role-taxonomy--watchdog-chain) for the mapping.
+
+---
+
 ## Learn more
 
-- **Spec** — [IronClaw_v1.md](IronClaw_v1.md)
-- **Design deep dive** — [IronClaw_v1_Design.md](IronClaw_v1_Design.md)
+- **System Specification** — [IronClaw_Complete_Spec.md](IronClaw_Complete_Spec.md) (The comprehensive source of truth)
+- **Agent Guide** — [Filesystem_Agent_Playbook.md](Filesystem_Agent_Playbook.md)
+- **Design deep dive** — [IronClaw_v1_Design.md](IronClaw_v1_Design.md) (Historical context)
 - **GitHub repository** — [https://github.com/TLoveOps1/ironclaw](https://github.com/TLoveOps1/ironclaw)
 - **Releases** — [https://github.com/TLoveOps1/ironclaw/releases](https://github.com/TLoveOps1/ironclaw/releases)
 
