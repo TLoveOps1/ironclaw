@@ -83,29 +83,30 @@ sequenceDiagram
 
 ### Filesystem Agent Mission Flow
 
-This diagram zooms in on the **v1.1 filesystem-based agent**, showing how a mission is materialized, executed, and audited using the filesystem as the primary interface.
+This diagram zooms in on the v1.1 filesystem-based agent, showing how a mission is
+materialized, executed, and audited using the filesystem as the primary interface.
 
 <div class="mermaid">
 flowchart TD
     User["User / CLI\n(chat or mission request)"]
 
-    subgraph CO["CO Service (Command & Oversight)"]
+    subgraph CO["CO Service"]
         COPlan["Plan mission\nmission_type = filesystem_agent.call_summary"]
-        COInputs["Write inputs/ + context/\n(call.md, mission.json,\naccount.json, playbook.md)"]
+        COInputs["Write inputs and context\ncall.md, mission.json,\naccount.json, playbook.md"]
     end
 
-    subgraph Vault["Vault Service (Worktree Manager)"]
-        VaultWT["Provision isolated Git worktree\n(theaters/demo/worktrees/<order_id>)"]
+    subgraph Vault["Vault Service"]
+        VaultWT["Provision isolated Git worktree\n(theater worktree for order)"]
     end
 
-    subgraph Worker["Worker Service\n(filesystem_agent.call_summary path)"]
-        WRead["Read inputs/call.md\n+ context files"]
+    subgraph Worker["Worker Service\nfilesystem agent path"]
+        WRead["Read inputs and context files"]
         WModel["Call model once\n(OpenAI-compatible API / Ollama)"]
-        WWrite["Write outputs/\nsummary.md, action_items.md,\nmodel_output.txt"]
-        WAAR["Update aar.json\n(mission_type + artifacts)"]
+        WWrite["Write outputs\nsummary.md, action_items.md,\nmodel_output.txt"]
+        WAAR["Update aar.json\nwith mission_type and artifacts"]
     end
 
-    Ledger["Ledger Service\n(events + order snapshot)"]
+    Ledger["Ledger Service\nevents and order snapshot"]
 
     User --> COPlan
     COPlan --> Ledger
@@ -120,6 +121,7 @@ flowchart TD
     WAAR --> Ledger
     WWrite --> User
 </div>
+
 
 ### Component Reference
 
