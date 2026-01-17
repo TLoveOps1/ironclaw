@@ -2,6 +2,22 @@
 
 *A comprehensive guide to the IronClaw mission execution and orchestration framework*
 
+
+---
+
+## Table of Contents
+
+1. [Overview & Vision](#1-overview--vision)
+2. [Role Taxonomy & Watchdog Chain](#2-role-taxonomy--watchdog-chain)
+3. [Detailed Unit Constraints](#3-detailed-unit-constraints--assault-units--observers)
+4. [The Interaction Loop](#4-the-interaction-loop-intent-to-integration)
+5. [Mission Planning & METE](#5-mission-planning--mete)
+6. [Unit Lifecycle & Decommissioning](#6-unit-lifecycle--decommissioning)
+7. [Configuration & State](#7-configuration--state)
+8. [Extensibility & Playbooks](#8-extensibility--playbooks)
+9. [The Operational Ledger & Artifact Management](#9-the-operational-ledger--artifact-management)
+10. [Glossary & Operational Guarantees](#10-glossary--operational-guarantees)
+
 ---
 
 ## 1. Overview & Vision
