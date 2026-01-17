@@ -1,212 +1,178 @@
-# IronClaw
+# IronClaw Master Documentation
 
-Live docs: https://tloveops1.github.io/ironclaw/
+> **Role**: Master Reference Guide  
+> **Scope**: Entire Project  
+> **Version**: 1.0 (Generated)
 
-*IronClaw is a Python-based mission execution and orchestration framework for durable, auditable AI runs in local or self-hosted environments.*
+## 1. Project Overview
 
-It is built around a simple premise:
+**IronClaw** is a specialized mission execution and orchestration framework designed for durable, auditable, and resilient AI operations. Unlike typical agent frameworks that rely on fragile in-memory state, IronClaw treats AI execution as **critical infrastructure**.
 
-> Execution units are disposable.  
-> Mission state is permanent.
+### Core Philosophy
+*   **Execution units are disposable**: Processes can crash or be killed without dataloss.
+*   **Mission state is permanent**: All state is captured in an immutable append-only ledger.
+*   **Isolation by default**: Every mission runs in a pristine, Git-backed worktree.
 
-IronClaw enforces this by combining an append-only event ledger, Git-backed worktrees, and strictly stateless execution units.
-
----
-
-## Why IronClaw exists
-
-Most AI agent systems fail in predictable ways:
-
-- work is lost on crashes or retries  
-- state lives inside process memory or model context  
-- failures are opaque and unreplayable  
-
-IronClaw treats AI execution as **infrastructure**, not magic.
-
-Every mission:
-- is logged as a sequence of immutable events
-- produces filesystem artifacts that can be inspected or replayed
-- can be retried safely without duplicating work
-
-This makes failures diagnosable, recoverable, and explainable.
+### How to Read This System
+> **Doctrine uses role names** (CO, Assault Unit, Observer) to describe authority and behavior.  
+> **Implementation uses service names** (co_service, worker_service, observer_service) to describe code.  
+> See [IronClaw_Complete_Spec.md §2](docs/IronClaw_Complete_Spec.md#2-role-taxonomy--watchdog-chain) for the mapping.
 
 ---
 
-## Architecture (high level)
+## 2. Architecture & Services
 
-IronClaw is split into five core services, each with a single responsibility:
+The system is composed of five distinct microservices (The "Garrison") that work in concert.
 
-- **Ledger**  
-  Append-only source of truth for all mission and order state.
-
-- **Vault**  
-  Owns Git worktree lifecycle, isolation, and archival.
-
-- **Worker**  
-  Stateless execution unit. Runs once, writes artifacts and an After Action Report, commits, exits.
-
-- **CO (Command & Oversight)**  
-  Central orchestration layer. Plans, dispatches, and synthesizes results.
-
-- **Observer**    
-  Passive oversight service. Detects stalled runs, orphaned state, and integrity violations.
-
-Detailed contracts, invariants, and non-goals are documented in the `/docs` directory.
+| Service | Role | Responsibility |
+| :--- | :--- | :--- |
+| **Ledger** | Storage | The single source of truth. Append-only event store for all mission states and artifacts. |
+| **Vault** | Infrastructure | Manages filesystem lifecycles. Creates, isolates, and archives Git worktrees for missions. |
+| **Worker** | Execution | Stateless "Assault Unit". Runs logic, interacts with models, and produces After Action Reports (AARs). |
+| **CO** | Orchestration | Command & Oversight. Decomposes missions into orders and dispatches them to workers. |
+| **Observer** | Watchdog | Passive monitoring. Detects stalled runs, zombies, and ensures system invariants are met. |
 
 ---
 
-## Quick start (demo theater)
+## 3. Directory Structure
 
-Run IronClaw locally using the included demo theater.
-
-```bash
-cd garrison/cli
-python3 ironclaw.py stack up
-python3 ironclaw.py chat "Hello IronClaw"
-```
-
-This will:
-1. Start the full local service stack
-2. Submit a mission
-3. Execute it in an isolated Git worktree
-4. Persist artifacts and lifecycle events
-
----
-
-## Filesystem Agent Demo (Call Summary Mission)
-
-IronClaw includes a working example of a **filesystem-based agent** that follows the
-"filesystem + execution" pattern popularized by modern agent runtimes.
-
-### What this demo does
-
-The `filesystem_agent.call_summary` mission demonstrates how IronClaw can:
-
-- plan a mission in the CO (Command & Oversight) service
-- provision an isolated worktree via Vault
-- materialize inputs and context as files
-- execute a mission-specific Worker path
-- produce durable, auditable artifacts
-
-Given a short call transcript, the agent:
-
-1. reads the transcript and contextual files from disk
-2. calls a language model once to summarize the call
-3. extracts action items
-4. writes results back to the filesystem
-
-### Worktree layout
-
-For a single mission, the Worker operates inside an isolated worktree:
+A complete view of the project layout.
 
 ```text
-inputs/
-  call.md
-  mission.json
-context/
-  account.json
-  playbook.md
-outputs/
-  summary.md
-  action_items.md
-  model_output.txt
-aar.json
+.
+├── docs/                               # Comprehensive Documentation & Specs
+│   ├── contracts.pdf                   # Formal system contracts
+│   ├── index.md                        # Documentation Home
+│   ├── IronClaw_Complete_Spec.md       # Authoritative System Specification
+│   ├── IronClaw_v1_Design.md           # Architectural Design Document (Historical)
+│   ├── IronClaw_v1.md                  # v1 System Specification (Historical)
+│   ├── Filesystem_Agent_Playbook.md    # Guide for FS Agent Demo
+│   └── _internal/                      # Internal task tracking & TODOs
+├── garrison/                           # Source Code for Core Services
+│   ├── cli/                            # CLI & Stack Operator
+│   │   ├── ironclaw.py                 # Main entrypoint script
+│   │   ├── README_STACK.md             # Stack operation guide
+│   │   └── README.md
+│   ├── co_service/                     # Command & Oversight Service
+│   │   ├── logic.py                    # Orchestration logic
+│   │   ├── main.py                     # Service entrypoint
+│   │   ├── models.py                   # Data models
+│   │   └── README.md
+│   ├── ledger_service/                 # Ledger Service
+│   │   ├── database.py                 # DB interactions
+│   │   ├── ingest_jsonl.py             # Data ingestion utilities
+│   │   ├── main.py                     # Service entrypoint
+│   │   ├── models.py                   # Data models
+│   │   └── README.md
+│   ├── observer_service/               # Observer Service
+│   │   ├── monitor.py                  # Monitoring logic
+│   │   ├── main.py                     # Service entrypoint
+│   │   ├── signals.py                  # Signal definitions
+│   │   └── README.md
+│   ├── vault_service/                  # Vault Service
+│   │   ├── manager.py                  # Worktree management logic
+│   │   ├── main.py                     # Service entrypoint
+│   │   ├── models.py                   # Data models
+│   │   └── README.md
+│   └── worker_service/                 # Worker Service
+│       ├── model_io.py                 # LLM Interface
+│       ├── runner.py                   # Execution logic
+│       ├── main.py                     # Service entrypoint
+│       ├── models.py                   # Data models
+│       └── README.md
+├── theaters/                           # Deployment Configurations
+│   └── demo/                           # "Demo" Theater (Local Dev)
+│       ├── policy.json                 # Operational policies
+│       └── schemas/                    # JSON Schemas for validation
+│           ├── aar.schema.json
+│           └── order.schema.json
+├── tools/                              # Utilities & Tests
+│   ├── co_smoke_test.py                # Smoke test for CO service
+│   ├── mock_model_server.py            # Mock LLM for offline testing
+│   ├── smoke_phaseE_cli.sh             # CLI Integration test
+│   ├── smoke_phaseF_observer.sh        # Observer Integration test
+│   ├── smoke_phaseG_stack.sh           # Full Stack Integration test
+│   ├── smoke_v1_1_model_call.sh        # Model I/O test
+│   ├── vault_smoke_test.py             # Vault unit tests
+│   └── worker_smoke_test.py            # Worker unit tests
+├── LICENSE                             # License File
+├── README.md                           # Quickstart README
+└── README.old.md                       # Archive of previous README
 ```
-
-- `inputs/` and `context/` are written by the CO service
-- `outputs/` and `aar.json` are written by the Worker
-
-### Why this matters
-
-This pattern makes agent behavior:
-
-- **inspectable** (you can open every file)
-- **reproducible** (rerun the same worktree)
-- **auditable** (AAR records inputs, outputs, and metadata)
-
-The filesystem agent is intentionally simple:
-
-- one mission
-- one model call
-- no hidden state
-
-More complex agents (multi-step plans, tool loops, retries) can be built on top of the same contract.
-
-### How to run the demo locally
-
-```bash
-cd garrison/cli
-python3 ironclaw.py stack up
-python3 ironclaw.py chat \
-  --mission-type filesystem_agent.call_summary \
-  --account-name "Acme Corp" \
-  --contact-name "Jane Smith" \
-  "Jane called about renewal concerns and uptime issues."
-```
-
-The Worker will:
-1. Read the call transcript from `inputs/call.md`
-2. Read account context from `context/account.json`
-3. Call the model to generate a summary and action items
-4. Write `outputs/summary.md` and `outputs/action_items.md`
-5. Commit everything to the worktree and archive it
-
-You can inspect the worktree in `theaters/demo/worktrees/` or the archive in `theaters/demo/archive/`.
 
 ---
 
-## Repository structure
+## 4. Operational Guide
 
-```text
-ironclaw/
-├── README.md              # This file (portfolio overview)
-├── docs/                  # Specifications and design docs
-├── garrison/              # Core services and CLI
-│   ├── cli/               # Human interface and stack control
-│   ├── ledger_service/    # Append-only event store
-│   ├── vault_service/     # Worktree and artifact management
-│   ├── worker_service/    # Stateless execution units
-│   ├── co_service/        # Command & Oversight orchestration
-│   └── observer_service/  # Passive monitoring and detection
-├── theaters/
-│   └── demo/              # Demo deployment (no runtime state committed)
-└── tools/                 # Smoke tests and verification scripts
-```
+### Prerequisites
+*   Linux Environment (Tested on standard distros)
+*   Python 3.8+
+*   Git installed and configured
 
-Runtime state (worktrees, ledgers, archives, secrets) is never committed.
+### Quick Start (The "Demo" Theater)
+
+The project includes a `demo` theater configuration for local testing without external infrastructure dependencies.
+
+1.  **Navigate to the CLI**:
+    ```bash
+    cd garrison/cli
+    ```
+
+2.  **Start the Stack**:
+    This verifies all services are up and healthy.
+    ```bash
+    python3 ironclaw.py stack up --theater demo
+    ```
+
+3.  **Run a Mission**:
+    ```bash
+    python3 ironclaw.py chat "Analyze the network logs"
+    ```
+
+4.  **View Status**:
+    ```bash
+    python3 ironclaw.py stack status
+    ```
+
+5.  **Shutdown**:
+    ```bash
+    python3 ironclaw.py stack down
+    ```
+
+### Logs & Debugging
+The stack operator manages logs centrally.
+*   **Tail all logs**: `python3 ironclaw.py stack logs`
+*   **Worker specific logs**: `python3 ironclaw.py stack logs worker -f`
+
+State files and logs are typically stored in `~/.ironclaw/stack/`.
 
 ---
 
-## Documentation
+## 5. Development & Testing
 
-For deeper detail:
+The `tools/` directory contains smoke tests used to verify system integrity during development.
 
-- **Authoritative system spec**  
-  [docs/IronClaw_v1.md](docs/IronClaw_v1.md)
-
-- **Design and architectural rationale**  
-  [docs/IronClaw_v1_Design.md](docs/IronClaw_v1_Design.md)
-
-- **CLI and stack operator guide**  
-  [garrison/cli/README_STACK.md](garrison/cli/README_STACK.md)
-
-- **Service-level documentation**  
-  Individual READMEs under `garrison/`
+**Key Tests:**
+*   `tools/smoke_phaseG_stack.sh`: **The Gold Standard**. Spins up everything and runs a full E2E scenario.
+*   `tools/worker_smoke_test.py`: Verifies the worker's ability to process orders in isolation.
+*   `tools/mock_model_server.py`: Useful for testing without real LLM API costs.
 
 ---
 
-## Project status
+## 6. Documentation Map
 
-- **v1** — Architecturally complete and frozen
-- **v1.1** — Hardened execution pipeline and policy-driven control
+Everything you need to know is in `docs/`.
 
-Future work focuses on:
-- richer playbooks and planning
-- improved observability
-- production-grade deployment profiles
+*   **System Specification**: [IronClaw_Complete_Spec.md](docs/IronClaw_Complete_Spec.md) (The comprehensive source of truth).
+*   **Design & Architecture**: [IronClaw_v1_Design.md](docs/IronClaw_v1_Design.md) (Architectural reasoning).
+*   **Agent Guide**: [Filesystem_Agent_Playbook.md](docs/Filesystem_Agent_Playbook.md) (How to run the FS agent).
 
-Core guarantees and invariants are intentionally stable.
+---
 
-IronClaw is opinionated by design.
+## 7. Configuration
 
-Those opinions are explicit, enforced, and testable.
+IronClaw uses Environment Variables and Policy Files.
+
+*   **Global Env**: `IRONCLAW_THEATER` (e.g., "demo")
+*   **Service URLs**: `LEDGER_URL`, `VAULT_URL`, etc. (Auto-configured by CLI)
+*   **Policy**: Defined in `theaters/<name>/policy.json`. Controls timeouts, retry limits, and allowed models.
