@@ -45,7 +45,7 @@ flowchart TB
         AAR["After Action Report (aar.json)"]
     end
 
-    CLI -- "chat/mission" --> CO
+    CLI -- "chat / mission" --> CO
     CO -- "audit" --> L
     CO -- "provision" --> V
     CO -- "dispatch" --> W
@@ -81,15 +81,55 @@ sequenceDiagram
     CO-->>U: Return result
 </div>
 
+### Filesystem Agent Mission Flow
+
+This diagram zooms in on the **v1.1 filesystem-based agent**, showing how a mission is materialized, executed, and audited using the filesystem as the primary interface.
+
+<div class="mermaid">
+flowchart TD
+    User["User / CLI\n(chat or mission request)"]
+
+    subgraph CO["CO Service (Command & Oversight)"]
+        COPlan["Plan mission\nmission_type = filesystem_agent.call_summary"]
+        COInputs["Write inputs/ + context/\n(call.md, mission.json,\naccount.json, playbook.md)"]
+    end
+
+    subgraph Vault["Vault Service (Worktree Manager)"]
+        VaultWT["Provision isolated Git worktree\n(theaters/demo/worktrees/<order_id>)"]
+    end
+
+    subgraph Worker["Worker Service\n(filesystem_agent.call_summary path)"]
+        WRead["Read inputs/call.md\n+ context files"]
+        WModel["Call model once\n(OpenAI-compatible API / Ollama)"]
+        WWrite["Write outputs/\nsummary.md, action_items.md,\nmodel_output.txt"]
+        WAAR["Update aar.json\n(mission_type + artifacts)"]
+    end
+
+    Ledger["Ledger Service\n(events + order snapshot)"]
+
+    User --> COPlan
+    COPlan --> Ledger
+    COPlan --> VaultWT
+    VaultWT --> COInputs
+    COInputs --> WRead
+
+    WRead --> WModel
+    WModel --> WWrite
+    WWrite --> WAAR
+
+    WAAR --> Ledger
+    WWrite --> User
+</div>
+
 ### Component Reference
 
-| Service   | Domain      | Responsibility                                       | Source of Truth                     |
-| :---      | :---        | :---                                                 | :---                                |
-| **Ledger**   | Persistence | Append-only event store for mission lifecycle.       | SQLite / JSONL                      |
-| **Vault**    | Storage     | Managing Git worktrees, isolation, and archival.    | Filesystem / Git                    |
-| **Worker**   | Execution   | Stateless mission runner with artifact generation.  | AAR (aar.json)                      |
-| **CO**       | Orchestration | High-level planning and service dispatch.        | Ledger Events                       |
-| **Observer** | Oversight   | Monitoring for stalls, orphans, and policy violations. | Signaling Buffer (in-memory / ephemeral) |
+| Service     | Domain          | Responsibility                                              | Source of Truth                     |
+|-------------|-----------------|--------------------------------------------------------------|-------------------------------------|
+| **Ledger**   | Persistence     | Append-only event store for mission lifecycle                | SQLite / JSONL                      |
+| **Vault**    | Storage         | Managing Git worktrees, isolation, and archival               | Filesystem / Git                    |
+| **Worker**   | Execution       | Stateless mission runner with artifact generation             | AAR (aar.json)                      |
+| **CO**       | Orchestration   | High-level planning and service dispatch                      | Ledger Events                       |
+| **Observer** | Oversight       | Monitoring stalls, orphans, and policy violations             | Ephemeral signaling buffer          |
 
 ---
 
@@ -104,10 +144,11 @@ python3 ironclaw.py chat "Hello IronClaw"
 ```
 
 This will:
-1. Start the full local service stack
-2. Submit a mission
-3. Execute it in an isolated Git worktree
-4. Persist artifacts and lifecycle events
+
+- Start the full local service stack
+- Submit a mission
+- Execute it in an isolated Git worktree
+- Persist artifacts and lifecycle events
 
 ---
 
@@ -125,7 +166,7 @@ IronClaw uses tagged, frozen releases to mark stable milestones.
   Establishes the baseline CO / Vault / Worker / Ledger architecture and execution guarantees.  
   https://github.com/TLoveOps1/ironclaw/releases/tag/v1.0.0
 
-All releases:  
+**All releases:**  
 https://github.com/TLoveOps1/ironclaw/releases
 
 ---
@@ -134,7 +175,7 @@ https://github.com/TLoveOps1/ironclaw/releases
 
 - **Spec** — [IronClaw_v1.md](IronClaw_v1.md)
 - **Design deep dive** — [IronClaw_v1_Design.md](IronClaw_v1_Design.md)
-- **GitHub repository** — [TLoveOps1/ironclaw](https://github.com/TLoveOps1/ironclaw)
-- **Releases** — https://github.com/TLoveOps1/ironclaw/releases 
+- **GitHub repository** — https://github.com/TLoveOps1/ironclaw
+- **Releases** — https://github.com/TLoveOps1/ironclaw/releases
 
 IronClaw prioritizes correctness, auditability, and operator control over raw throughput or autonomy.
