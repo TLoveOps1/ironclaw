@@ -177,7 +177,7 @@ https://github.com/TLoveOps1/ironclaw/releases
 
 - **Spec** — [IronClaw_v1.md](IronClaw_v1.md)
 - **Design deep dive** — [IronClaw_v1_Design.md](IronClaw_v1_Design.md)
-- **GitHub repository** — https://github.com/TLoveOps1/ironclaw
-- **Releases** — https://github.com/TLoveOps1/ironclaw/releases
+- **GitHub repository** — [https://github.com/TLoveOps1/ironclaw](https://github.com/TLoveOps1/ironclaw)
+- **Releases** — [https://github.com/TLoveOps1/ironclaw/releases](https://github.com/TLoveOps1/ironclaw/releases)
 
 IronClaw prioritizes correctness, auditability, and operator control over raw throughput or autonomy.
