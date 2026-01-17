@@ -237,7 +237,7 @@ This is where the actual labor occurs in isolation.
 ### Phase 4: Oversight & Recovery (The Watchdog)
 
 While execution is happening, the Watchdog Chain is active.
-1. **Patrol**: The **Observer** or **Duty Officer** scans the ledger.
+1. **Patrol**: The **Observer** (and, in future versions, the **Duty Officer**) scans the ledger.
 2. **Health Check**: If a unit is stalled or failing, the Watchdog intervenes (retries, reassigns, or escalates).
 3. **Integrity Check**: Once a unit claims completion, the Watchdog verifies the artifacts exist on disk before allowing the unit to terminate.
 
