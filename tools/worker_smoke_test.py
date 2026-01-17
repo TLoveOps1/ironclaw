@@ -1,4 +1,5 @@
 import requests
+import os
 import time
 import sys
 import subprocess
@@ -46,7 +47,11 @@ def test_worker_e2e():
             "worktree_path": wt_path,
             "objective": "Test worker execution",
             "prompt": "Say 'hello world' and nothing else.",
-            "model": test_model
+            "resolved_model_config": {
+                "model": test_model,
+                "temperature": 0.1,
+                "max_tokens": 50
+            }
         })
         resp.raise_for_status()
         data = resp.json()
@@ -66,7 +71,11 @@ def test_worker_e2e():
             "worktree_path": wt_path,
             "objective": "Test worker execution",
             "prompt": "Say 'hello world' and nothing else.",
-            "model": test_model
+            "resolved_model_config": {
+                "model": test_model,
+                "temperature": 0.1,
+                "max_tokens": 50
+            }
         })
         resp.raise_for_status()
         data = resp.json()

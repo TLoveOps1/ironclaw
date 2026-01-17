@@ -12,6 +12,7 @@ import subprocess
 import os
 import signal
 import tarfile
+import sys
 from pathlib import Path
 
 # Configuration
@@ -38,7 +39,7 @@ def run_stack():
                     env[key] = value
 
     stack_proc = subprocess.Popen(
-        ["python3", "garrison/cli/ironclaw.py", "stack", "up", "--theater", "demo"],
+        [sys.executable, "garrison/cli/ironclaw.py", "stack", "up", "--theater", "demo"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env
@@ -59,7 +60,7 @@ def run_stack():
 
 def stop_stack():
     print("Stopping stack...")
-    subprocess.run(["python3", "garrison/cli/ironclaw.py", "stack", "down"], check=True)
+    subprocess.run([sys.executable, "garrison/cli/ironclaw.py", "stack", "down"], check=True)
 
 def test_scenario(name, payload, expected_mission_type, expected_artifacts=None):
     print(f"\n--- Running Scenario: {name} ---")

@@ -25,9 +25,10 @@ class WorkerRunner:
 
     def emit_ledger_event(self, req_data: Dict[str, Any], status: str, event_type: str, payload_extra: Dict[str, Any] = None):
         # Idempotency: request_id maps to event_id
-        event_id = f"worker-{req_data['order_id']}-{req_data['attempt']}-{status}"
+        # We append event_type to ensure uniqueness across different events sharing the same high-level status
+        event_id = f"worker-{req_data['order_id']}-{req_data['attempt']}-{event_type}"
         if req_data.get("request_id"):
-            event_id = f"{req_data['request_id']}-{status}"
+            event_id = f"{req_data['request_id']}-{event_type}"
         
         payload = {
             "status": status,
