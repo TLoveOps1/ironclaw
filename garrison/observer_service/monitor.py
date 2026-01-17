@@ -129,7 +129,7 @@ class IronClawMonitor:
             res = subprocess.run(["git", "status", "--porcelain"], cwd=str(wt_path), capture_output=True, text=True)
             if res.stdout.strip():
                 # Uncommitted changes in a 'completed' worktree is a red flag
-                 if self.signals.emit("integrity_failed", f"Completed order {order_id} has uncommitted changes",
+                if self.signals.emit("integrity_failed", f"Completed order {order_id} has uncommitted changes",
                                     run_id=latest_ev.get("run_id"), order_id=order_id,
                                     payload_extra={"git_status": res.stdout.strip()}):
                     self.stats["integrity_failures"] += 1

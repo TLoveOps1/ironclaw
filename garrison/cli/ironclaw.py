@@ -117,8 +117,10 @@ class StackManager:
             env["CO_URL"] = f"http://127.0.0.1:8013"
             
             # Use theater venv if it exists
-            theater_venv = BASE_DIR / "theaters" / self.theater / ".venv" / "bin" / "activate"
-            cmd = [sys.executable, "-m", "uvicorn", "main:app", "--port", str(port), "--host", "127.0.0.1"]
+            venv_python = BASE_DIR / "theaters" / self.theater / ".venv" / "bin" / "python"
+            executable = str(venv_python) if venv_python.exists() else sys.executable
+            
+            cmd = [executable, "-m", "uvicorn", "main:app", "--port", str(port), "--host", "127.0.0.1"]
             
             proc = subprocess.Popen(
                 cmd,
