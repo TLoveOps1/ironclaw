@@ -9,7 +9,7 @@
 **IronClaw** is a specialized mission execution and orchestration framework designed for durable, auditable, and resilient AI operations. Unlike typical agent frameworks that rely on fragile in-memory state, IronClaw treats AI execution as **critical infrastructure**.
 
 ### Core Philosophy
-*   **Execution units are disposable**: Processes can crash or be killed without dataloss.
+*   **Execution units are disposable**: Processes can crash or be killed without data loss.
 *   **Mission state is permanent**: All state is captured in an immutable append-only ledger.
 *   **Isolation by default**: Every mission runs in a pristine, Git-backed worktree.
 
