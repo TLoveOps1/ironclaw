@@ -82,6 +82,14 @@ The system is organized into **Garrison-level** command roles and **Theater-leve
 
 ### The Watchdog Chain (System Integrity)
 
+> **Note on v1 Implementation:**
+> In the v1 release, these conceptual roles are mapped to specific services:
+> *   **Commanding Officer** → `co_service`
+> *   **Assault Unit** → `worker_service`
+> *   **Observer** → `observer_service`
+>
+> Roles such as **Duty Officer**, **Sentinel**, and **Fireteam** are defined here for architectural completeness but may not be represented by dedicated services in v1. Their functions are either performed manually or consolidated.
+
 The Watchdog Chain enforces **Asynchronous Command Integrity (ACI)**. Its purpose is to ensure that missions progress even when individual units fail, stall, or disappear.
 
 **Duty Officer (DO)**
@@ -110,13 +118,13 @@ The Watchdog Chain enforces **Asynchronous Command Integrity (ACI)**. Its purpos
 
 ### Theater-Level Roles (Mission Execution)
 
-**Assault Unit**
+**Assault Unit** (Implements: `worker_service`)
 * **Role**: Ephemeral execution unit.
 * **Lifecycle**: Spawn → Execute → Report → Destroy.
 * **Responsibilities**: Executes exactly one Order, operates in isolated git worktree, calls io.intelligence models and approved tools, writes artifacts and state to disk, produces After-Action Report (AAR).
 * **Constraints**: No long-term memory, no coordination with other units except via Orders, never writes directly to Theater mainline state.
 
-**Fireteam**
+**Fireteam** (Planned / v2)
 * **Role**: Persistent capability unit.
 * **Lifecycle**: Long-lived, resumable.
 * **Responsibilities**: Maintains continuity for sustained missions, holds structured state (not model context), executes repeated Orders within a domain.
